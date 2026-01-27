@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ProX Tournaments - Player App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- THEME VARIABLES --- */
+        :root {
+            --primary: #00f2ea;
+            --secondary: #ff0055;
+            --bg-dark: #0f0f13;
+            --bg-card: #1a1a24;
+            --bg-nav: #14141c;
+            --text-main: #ffffff;
+            --text-muted: #a0a0b0;
+            --success: #00ff88;
+            --danger: #ff4444;
+            --radius: 12px;
+        }
+
+        /* --- RESET & BASE --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+        body { font-family: 'Roboto', sans-serif; background-color: var(--bg-dark); color: var(--text-main); padding-bottom: 80px; /* Space for bottom nav */ }
+        h1, h2, h3, h4, .btn { font-family: 'Rajdhani', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+        a { text-decoration: none; color: inherit; }
+        img { max-width: 100%; display: block; }
+
+        /* --- UTILITIES --- */
+        .hidden { display: none !important; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .text-primary { color: var(--primary); }
+        .text-secondary { color: var(--secondary); }
+        .text-center { text-align: center; }
+        .w-full { width: 100%; }
+        .gap-10 { gap: 10px; }
+        .p-20 { padding: 20px; }
+
+        /* --- BUTTONS --- */
+        .btn { border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 1rem; width: 100%; text-align: center; }
+        .btn-primary { background: var(--primary); color: #000; box-shadow: 0 0 10px rgba(0, 242, 234, 0.3); }
+        .btn-primary:active { transform: scale(0.98); }
+        .btn-secondary { background: var(--secondary); color: #fff; }
+        .btn-outline { border: 1px solid var(--text-muted); background: transparent; color: var(--text-muted); }
+        
+        /* --- INPUTS --- */
+        input, select, textarea { width: 100%; background: #252530; border: 1px solid #333; padding: 12px; border-radius: 8px; color: #fff; margin-bottom: 12px; font-size: 1rem; }
+        input:focus { border-color: var(--primary); }
+
+        /* --- AUTH SCREEN --- */
+        #auth-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; background: var(--bg-dark); z-index: 9999; display: flex; flex-direction: column; justify-content: center; padding: 30px; }
+        .auth-toggle { margin-top: 20px; text-align: center; color: var(--text-muted); cursor: pointer; font-size: 0.9rem; }
+
+        /* --- HEADER --- */
+        .app-header { background: var(--bg-nav); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #222; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: #fff; }
+        .logo span { color: var(--primary); }
+        .wallet-badge { background: #252530; padding: 5px 12px; border-radius: 20px; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 5px; border: 1px solid #333; }
+
+        /* --- BOTTOM NAV --- */
+        .bottom-nav { position: fixed; bottom: 0; width: 100%; background: var(--bg-nav); border-top: 1px solid #222; display: flex; justify-content: space-around; padding: 12px 0; z-index: 100; padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+        .nav-item { color: var(--text-muted); display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; gap: 4px; cursor: pointer; }
+        .nav-item i { font-size: 1.2rem; }
+        .nav-item.active { color: var(--primary); }
+
+        /* --- CARDS & LISTS --- */
+        .filter-tabs { display: flex; gap: 10px; padding: 15px 20px; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+        .filter-pill { background: #252530; padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; color: var(--text-muted); border: 1px solid #333; cursor: pointer; }
+        .filter-pill.active { background: var(--primary); color: #000; border-color: var(--primary); font-weight: 600; }
+
+        .tournament-card { background: var(--bg-card); margin: 0 20px 20px; border-radius: var(--radius); overflow: hidden; border: 1px solid #2a2a35; }
+        .card-banner { height: 140px; background-size: cover; background-position: center; position: relative; }
+        .card-banner::after { content: ''; position: absolute; bottom: 0; width: 100%; height: 60%; background: linear-gradient(to top, var(--bg-card), transparent); }
+        .status-tag { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); padding: 4px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; border: 1px solid var(--primary); color: var(--primary); text-transform: uppercase; }
+        
+        .card-body { padding: 15px; }
+        .card-title { font-size: 1.1rem; margin-bottom: 8px; font-weight: 700; }
+        .meta-info { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.85rem; color: var(--text-muted); }
+        .prize-row { display: flex; justify-content: space-between; align-items: center; background: #252530; padding: 8px 12px; border-radius: 6px; margin-bottom: 15px; }
+        .prize-label { font-size: 0.75rem; color: var(--text-muted); }
+        .prize-val { color: var(--success); font-weight: 700; font-size: 1rem; }
+        .fee-val { color: var(--primary); font-weight: 700; }
+
+        /* --- DETAILS VIEW --- */
+        .details-header { padding: 20px; background: var(--bg-card); border-bottom: 1px solid #333; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px; }
+        .info-box { background: #252530; padding: 15px; border-radius: 8px; text-align: center; }
+        .info-box span { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 5px; }
+        .info-box strong { font-size: 1.1rem; color: #fff; }
+
+        /* --- WALLET VIEW --- */
+        .wallet-card { background: linear-gradient(135deg, #1a1a24 0%, #252530 100%); margin: 20px; padding: 25px; border-radius: 16px; text-align: center; border: 1px solid #333; }
+        .balance-label { color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; letter-spacing: 1px; }
+        .balance-amount { font-size: 2.5rem; font-weight: 700; margin: 10px 0 20px; color: var(--primary); font-family: 'Rajdhani', sans-serif; }
+        .wallet-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        
+        .transaction-list { padding: 0 20px; }
+        .trans-item { display: flex; justify-content: space-between; padding: 15px 0; border-bottom: 1px solid #2a2a35; }
+        .trans-details h4 { font-size: 0.95rem; margin-bottom: 4px; }
+        .trans-details p { font-size: 0.75rem; color: var(--text-muted); }
+        .trans-amount { font-weight: 700; }
+        .t-plus { color: var(--success); }
+        .t-minus { color: var(--danger); }
+
+        /* --- MODAL --- */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 2000; display: flex; align-items: flex-end; opacity: 0; pointer-events: none; transition: 0.3s; }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal-content { background: var(--bg-card); width: 100%; border-radius: 20px 20px 0 0; padding: 25px; transform: translateY(100%); transition: 0.3s; max-height: 80vh; overflow-y: auto; }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        
+        /* --- NOTIFICATION TOAST --- */
+        #toast { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 50px; font-size: 0.9rem; z-index: 3000; opacity: 0; pointer-events: none; transition: 0.3s; white-space: nowrap; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        #toast.show { opacity: 1; bottom: 100px; }
+    </style>
+</head>
+<body>
+
+    <div id="auth-screen">
+        <div class="text-center" style="margin-bottom: 40px;">
+            <h1 class="text-primary" style="font-size: 2.5rem; margin-bottom: 10px;">PRO X</h1>
+            <p style="color: var(--text-muted);">Esports Tournament Platform</p>
+        </div>
+
+        <form id="loginForm">
+            <input type="email" id="loginEmail" placeholder="Email Address" required>
+            <input type="password" id="loginPass" placeholder="Password" required>
+            <button type="submit" class="btn btn-primary">Login</button>
+        </form>
+
+        <form id="registerForm" class="hidden">
+            <input type="text" id="regUsername" placeholder="Username (Gamer Tag)" required>
+            <input type="email" id="regEmail" placeholder="Email Address" required>
+            <input type="password" id="regPass" placeholder="Password (Min 6 chars)" required>
+            <button type="submit" class="btn btn-secondary">Create Account</button>
+        </form>
+
+        <div class="auth-toggle" onclick="toggleAuth()">
+            <span id="authToggleText">New user? Create an account</span>
+        </div>
+        <p id="authError" class="text-danger text-center" style="margin-top: 15px; font-size: 0.9rem;"></p>
+    </div>
+
+    <div id="app-container" class="hidden">
+        
+        <header class="app-header">
+            <div class="logo">PRO <span>X</span></div>
+            <div class="wallet-badge" onclick="switchView('wallet')">
+                <i class="fas fa-wallet text-primary"></i>
+                <span id="header-balance">₹0</span>
+            </div>
+        </header>
+
+        <main id="main-content">
+            
+            <div id="view-home">
+                <div class="filter-tabs">
+                    <div class="filter-pill active" onclick="filterTournaments('all', this)">All</div>
+                    <div class="filter-pill" onclick="filterTournaments('upcoming', this)">Upcoming</div>
+                    <div class="filter-pill" onclick="filterTournaments('live', this)">Live</div>
+                    <div class="filter-pill" onclick="filterTournaments('completed', this)">Results</div>
+                </div>
+
+                <div id="tournament-list" style="padding-bottom: 20px;">
+                    <div class="text-center p-20" style="color: #555;">Loading Tournaments...</div>
+                </div>
+            </div>
+
+            <div id="view-details" class="hidden">
+                <div class="p-20">
+                    <button class="btn-outline" style="width: auto; padding: 5px 15px; font-size: 0.8rem; margin-bottom: 10px;" onclick="switchView('home')"><i class="fas fa-arrow-left"></i> Back</button>
+                </div>
+                
+                <div id="detail-content">
+                    </div>
+            </div>
+
+            <div id="view-wallet" class="hidden">
+                <div class="wallet-card">
+                    <div class="balance-label">Total Balance</div>
+                    <div class="balance-amount" id="wallet-balance">₹0</div>
+                    <div class="wallet-actions">
+                        <button class="btn btn-primary" onclick="openDepositModal()">Add Money</button>
+                        <button class="btn btn-outline" onclick="openWithdrawModal()">Withdraw</button>
+                    </div>
+                </div>
+
+                <h3 style="margin: 0 20px 15px;">Transaction History</h3>
+                <div class="transaction-list" id="transaction-history">
+                    </div>
+            </div>
+
+            <div id="view-profile" class="hidden">
+                <div class="text-center p-20" style="background: var(--bg-card); margin-bottom: 20px;">
+                    <div style="width: 80px; height: 80px; background: #333; border-radius: 50%; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #555;">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <h2 id="profile-name">User</h2>
+                    <p id="profile-email" style="color: var(--text-muted); font-size: 0.9rem;">email@example.com</p>
+                    <button class="btn btn-outline" style="margin-top: 15px; border-color: var(--danger); color: var(--danger);" onclick="logout()">Logout</button>
+                </div>
+
+                <h3 style="margin: 0 20px 10px;">My Matches</h3>
+                <div id="my-matches-list" style="padding: 0 20px;">
+                    </div>
+            </div>
+
+        </main>
+
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="switchView('home')">
+                <i class="fas fa-trophy"></i>
+                <span>Play</span>
+            </div>
+            <div class="nav-item" onclick="switchView('wallet')">
+                <i class="fas fa-wallet"></i>
+                <span>Wallet</span>
+            </div>
+            <div class="nav-item" onclick="switchView('profile')">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+            </div>
+        </nav>
+    </div>
+
+    <div class="modal-overlay" id="join-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Registration</h3>
+                <i class="fas fa-times" onclick="closeModal('join-modal')" style="font-size: 1.5rem;"></i>
+            </div>
+            <form id="joinForm">
+                <input type="hidden" id="join-tid">
+                <input type="hidden" id="join-fee">
+                
+                <label style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Your Game Name</label>
+                <input type="text" id="game-name" placeholder="Exact In-Game Name" required>
+                
+                <label style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Game UID</label>
+                <input type="number" id="game-uid" placeholder="UID Number" required>
+
+                <div id="team-fields" class="hidden">
+                    <label style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 5px; display: block;">Teammate Names (Comma Separated)</label>
+                    <input type="text" id="teammates" placeholder="Player 2, Player 3...">
+                </div>
+
+                <div style="background: #252530; padding: 10px; border-radius: 6px; margin-bottom: 15px; display: flex; justify-content: space-between;">
+                    <span>Entry Fee:</span>
+                    <span class="text-primary" id="modal-fee-display">FREE</span>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Confirm & Pay</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="deposit-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Add Money</h3>
+                <i class="fas fa-times" onclick="closeModal('deposit-modal')" style="font-size: 1.5rem;"></i>
+            </div>
+            <div class="text-center">
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Minimum Deposit: ₹1</p>
+                <div id="qr-container" style="background: #fff; padding: 10px; width: 180px; margin: 15px auto; border-radius: 8px;">
+                    <img id="upi-qr" src="" style="width: 100%;">
+                </div>
+                <a id="upi-intent-btn" href="#" class="btn btn-secondary" style="margin-bottom: 15px; display: inline-block;">Pay via UPI App</a>
+            </div>
+            <form id="depositForm" style="margin-top: 20px;">
+                <input type="number" id="dep-amount" placeholder="Amount Paid (₹)" required>
+                <input type="text" id="dep-utr" placeholder="Enter UTR / Transaction ID" required>
+                <button type="submit" class="btn btn-primary">Submit Request</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="withdraw-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Withdraw</h3>
+                <i class="fas fa-times" onclick="closeModal('withdraw-modal')" style="font-size: 1.5rem;"></i>
+            </div>
+            <form id="withdrawForm">
+                <input type="number" id="wd-amount" placeholder="Amount (Min ₹10)" required>
+                <input type="text" id="wd-upi" placeholder="Your UPI ID" required>
+                <button type="submit" class="btn btn-primary">Request Withdraw</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="toast">Notification</div>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // --------------------------------------------------
+        // 1. FIREBASE CONFIGURATION
+        // ⚠️ REPLACE THIS WITH YOUR OWN FIREBASE CONFIG
+        // --------------------------------------------------
+        const firebaseConfig = {
+  apiKey: "AIzaSyBSwVULcJg9JPffqqwUvFXHfGUBhpBWvuM",
+  authDomain: "komal55.firebaseapp.com",
+  databaseURL: "https://komal55-default-rtdb.firebaseio.com",
+  projectId: "komal55",
+  storageBucket: "komal55.firebasestorage.app",
+  messagingSenderId: "328195818559",
+  appId: "1:328195818559:web:4190eaed77f3b07bab248a"
+};
+
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const auth = firebase.auth();
+        const db = firebase.database();
+
+        let currentUser = null;
+        let userData = {};
+        let currentUpiId = "example@upi"; // Default fallback
+
+        // --------------------------------------------------
+        // 2. AUTHENTICATION
+        // --------------------------------------------------
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-screen').classList.add('hidden');
+                document.getElementById('app-container').classList.remove('hidden');
+                initApp();
+            } else {
+                currentUser = null;
+                document.getElementById('auth-screen').classList.remove('hidden');
+                document.getElementById('app-container').classList.add('hidden');
+            }
+        });
+
+        function toggleAuth() {
+            const login = document.getElementById('loginForm');
+            const reg = document.getElementById('registerForm');
+            const txt = document.getElementById('authToggleText');
+            
+            if (login.classList.contains('hidden')) {
+                login.classList.remove('hidden');
+                reg.classList.add('hidden');
+                txt.innerText = "New user? Create an account";
+            } else {
+                login.classList.add('hidden');
+                reg.classList.remove('hidden');
+                txt.innerText = "Already have an account? Login";
+            }
+        }
+
+        // Login Logic
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const pass = document.getElementById('loginPass').value;
+            auth.signInWithEmailAndPassword(email, pass).catch(err => showError(err.message));
+        });
+
+        // Register Logic
+        document.getElementById('registerForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const email = document.getElementById('regEmail').value;
+            const pass = document.getElementById('regPass').value;
+            const userTag = document.getElementById('regUsername').value;
+
+            auth.createUserWithEmailAndPassword(email, pass).then(cred => {
+                // Save basic user info
+                return db.ref('users/' + cred.user.uid).set({
+                    username: userTag,
+                    email: email,
+                    wallet: 0,
+                    createdAt: firebase.database.ServerValue.TIMESTAMP
+                });
+            }).catch(err => showError(err.message));
+        });
+
+        function logout() {
+            auth.signOut();
+            location.reload();
+        }
+
+        function showError(msg) {
+            document.getElementById('authError').innerText = msg;
+        }
+
+        // --------------------------------------------------
+        // 3. APP LOGIC & NAVIGATION
+        // --------------------------------------------------
+        function initApp() {
+            loadUserProfile();
+            loadTournaments();
+            loadSettings();
+            listenToBroadcasts();
+        }
+
+        function switchView(viewName) {
+            // Hide all views
+            ['home', 'details', 'wallet', 'profile'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+            });
+            // Show target
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+            
+            // Update Nav
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            if(viewName === 'home') document.querySelectorAll('.nav-item')[0].classList.add('active');
+            if(viewName === 'wallet') document.querySelectorAll('.nav-item')[1].classList.add('active');
+            if(viewName === 'profile') document.querySelectorAll('.nav-item')[2].classList.add('active');
+        }
+
+        function showToast(msg) {
+            const x = document.getElementById("toast");
+            x.innerText = msg;
+            x.className = "show";
+            setTimeout(() => { x.className = x.className.replace("show", ""); }, 3000);
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        // --------------------------------------------------
+        // 4. DATA LOADING
+        // --------------------------------------------------
+        
+        // --- USER PROFILE & WALLET ---
+        function loadUserProfile() {
+            db.ref('users/' + currentUser.uid).on('value', snap => {
+                userData = snap.val() || {};
+                const bal = userData.wallet || 0;
+                
+                document.getElementById('header-balance').innerText = `₹${bal}`;
+                document.getElementById('wallet-balance').innerText = `₹${bal}`;
+                document.getElementById('profile-name').innerText = userData.username || 'Gamer';
+                document.getElementById('profile-email').innerText = currentUser.email;
+            });
+
+            // Load Transaction History
+            db.ref('deposits').orderByChild('userId').equalTo(currentUser.uid).limitToLast(10).on('value', snap => {
+                renderTransactions(snap, 'deposit');
+            });
+        }
+
+        function renderTransactions(snap, type) {
+            const container = document.getElementById('transaction-history');
+            container.innerHTML = ''; // Clear for simplicity in this demo logic
+            
+            snap.forEach(child => {
+                const t = child.val();
+                const isDep = true; // simplifying logic
+                const div = document.createElement('div');
+                div.className = 'trans-item';
+                div.innerHTML = `
+                    <div class="trans-details">
+                        <h4>${type === 'deposit' ? 'Deposit' : 'Withdraw'}</h4>
+                        <p>${new Date(t.timestamp).toLocaleDateString()} • <span style="color:var(--${t.status === 'approved' ? 'success' : 'text-muted'})">${t.status}</span></p>
+                    </div>
+                    <div class="trans-amount ${type === 'deposit' ? 't-plus' : 't-minus'}">${type === 'deposit' ? '+' : '-'}₹${t.amount}</div>
+                `;
+                container.prepend(div);
+            });
+        }
+
+        // --- TOURNAMENTS ---
+        let allTournaments = [];
+
+        function loadTournaments() {
+            db.ref('tournaments').orderByChild('createdAt').on('value', snap => {
+                allTournaments = [];
+                snap.forEach(child => {
+                    allTournaments.push({id: child.key, ...child.val()});
+                });
+                // Default render
+                renderTournaments(allTournaments.reverse()); // Show newest first
+            });
+        }
+
+        function renderTournaments(list) {
+            const container = document.getElementById('tournament-list');
+            container.innerHTML = '';
+            
+            if(list.length === 0) {
+                container.innerHTML = '<div class="text-center p-20" style="color:#555">No tournaments found.</div>';
+                return;
+            }
+
+            list.forEach(t => {
+                const html = `
+                    <div class="tournament-card" onclick="openTournamentDetails('${t.id}')">
+                        <div class="card-banner" style="background-image: url('${t.banner || 'https://via.placeholder.com/400x200?text=ESPORTS'}')">
+                            <span class="status-tag">${t.status}</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">${t.title}</div>
+                            <div class="meta-info">
+                                <span><i class="fas fa-calendar"></i> ${new Date(t.startTime).toLocaleDateString()}</span>
+                                <span>${t.mode} • ${t.type}</span>
+                            </div>
+                            <div class="prize-row">
+                                <div>
+                                    <div class="prize-label">PRIZE POOL</div>
+                                    <div class="prize-val">${t.prizePool}</div>
+                                </div>
+                                <div>
+                                    <div class="prize-label text-center">ENTRY</div>
+                                    <div class="fee-val">${t.entryFee > 0 ? '₹'+t.entryFee : 'FREE'}</div>
+                                </div>
+                                <button class="btn btn-primary" style="width: auto; padding: 6px 15px; font-size: 0.8rem;">JOIN</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += html;
+            });
+        }
+
+        function filterTournaments(filter, btn) {
+            // UI Toggle
+            document.querySelectorAll('.filter-pill').forEach(el => el.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Logic
+            if(filter === 'all') {
+                renderTournaments(allTournaments);
+            } else {
+                const filtered = allTournaments.filter(t => t.status.toLowerCase() === filter);
+                renderTournaments(filtered);
+            }
+        }
+
+        // --- TOURNAMENT DETAILS & JOINING ---
+        let currentTournament = null;
+
+        function openTournamentDetails(tid) {
+            currentTournament = allTournaments.find(t => t.id === tid);
+            if(!currentTournament) return;
+
+            const content = document.getElementById('detail-content');
+            
+            // Format time
+            const date = new Date(currentTournament.startTime);
+            
+            content.innerHTML = `
+                <div class="card-banner" style="background-image: url('${currentTournament.banner}')"></div>
+                <div class="p-20">
+                    <h2>${currentTournament.title}</h2>
+                    <p style="color:var(--text-muted); margin-bottom: 20px;">${currentTournament.mode} • ${currentTournament.type}</p>
+                    
+                    <div class="info-grid">
+                        <div class="info-box">
+                            <span>Prize Pool</span>
+                            <strong class="text-success">${currentTournament.prizePool}</strong>
+                        </div>
+                        <div class="info-box">
+                            <span>Entry Fee</span>
+                            <strong class="text-primary">${currentTournament.entryFee > 0 ? '₹'+currentTournament.entryFee : 'Free'}</strong>
+                        </div>
+                        <div class="info-box">
+                            <span>Date</span>
+                            <strong>${date.getDate()}/${date.getMonth()+1}</strong>
+                        </div>
+                        <div class="info-box">
+                            <span>Time</span>
+                            <strong>${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}</strong>
+                        </div>
+                    </div>
+
+                    <div style="background: #252530; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4 style="margin-bottom: 10px;">Rules & Map Info</h4>
+                        <p style="color: #ccc; font-size: 0.9rem; line-height: 1.5; white-space: pre-line;">${currentTournament.rules}</p>
+                    </div>
+
+                    ${currentTournament.status === 'upcoming' 
+                        ? `<button class="btn btn-primary" onclick="openJoinModal()">REGISTER NOW</button>` 
+                        : `<button class="btn btn-outline" disabled>REGISTRATION CLOSED</button>`}
+                </div>
+            `;
+            
+            switchView('details');
+        }
+
+        function openJoinModal() {
+            if(!currentTournament) return;
+            
+            document.getElementById('join-tid').value = currentTournament.id;
+            document.getElementById('join-fee').value = currentTournament.entryFee;
+            document.getElementById('modal-fee-display').innerText = currentTournament.entryFee > 0 ? '₹' + currentTournament.entryFee : 'FREE';
+            
+            // Show team input if needed
+            const teamInput = document.getElementById('team-fields');
+            if(currentTournament.type === 'Solo') {
+                teamInput.classList.add('hidden');
+                document.getElementById('teammates').required = false;
+            } else {
+                teamInput.classList.remove('hidden');
+                document.getElementById('teammates').required = true;
+            }
+
+            document.getElementById('join-modal').classList.add('active');
+        }
+
+        document.getElementById('joinForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const fee = parseInt(document.getElementById('join-fee').value);
+            const currentBal = userData.wallet || 0;
+
+            if (fee > currentBal) {
+                showToast("Insufficient Balance! Please Add Money.");
+                return;
+            }
+
+            const tid = document.getElementById('join-tid').value;
+            const regData = {
+                gameName: document.getElementById('game-name').value,
+                gameUid: document.getElementById('game-uid').value,
+                teammates: document.getElementById('teammates').value || '',
+                userId: currentUser.uid,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            };
+
+            // Process Join
+            if(fee > 0) {
+                // Deduct Balance
+                db.ref('users/' + currentUser.uid + '/wallet').set(currentBal - fee);
+            }
+
+            db.ref('registrations/' + tid + '/' + currentUser.uid).set(regData).then(() => {
+                showToast("Joined Successfully!");
+                closeModal('join-modal');
+                switchView('home');
+            });
+        });
+
+        // --------------------------------------------------
+        // 5. WALLET LOGIC
+        // --------------------------------------------------
+        function loadSettings() {
+            db.ref('settings').on('value', snap => {
+                const s = snap.val();
+                if(s && s.upiId) {
+                    currentUpiId = s.upiId;
+                }
+            });
+        }
+
+        function openDepositModal() {
+            // Generate QR
+            const upiLink = `upi://pay?pa=${currentUpiId}&pn=ProXTournaments&mc=0000&tr=&tn=AddMoney&am=&cu=INR`;
+            document.getElementById('upi-qr').src = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(upiLink)}`;
+            document.getElementById('upi-intent-btn').href = upiLink;
+            
+            document.getElementById('deposit-modal').classList.add('active');
+        }
+
+        document.getElementById('depositForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const amount = document.getElementById('dep-amount').value;
+            const utr = document.getElementById('dep-utr').value;
+
+            db.ref('deposits').push({
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                amount: parseInt(amount),
+                utr: utr,
+                status: 'pending',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Deposit Request Submitted!");
+                closeModal('deposit-modal');
+                document.getElementById('depositForm').reset();
+            });
+        });
+
+        function openWithdrawModal() {
+            document.getElementById('withdraw-modal').classList.add('active');
+        }
+
+        document.getElementById('withdrawForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const amount = parseInt(document.getElementById('wd-amount').value);
+            
+            if((userData.wallet || 0) < amount) {
+                showToast("Insufficient Balance");
+                return;
+            }
+
+            db.ref('withdrawRequests').push({
+                userId: currentUser.uid,
+                userEmail: currentUser.email,
+                amount: amount,
+                upiId: document.getElementById('wd-upi').value,
+                status: 'pending',
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            }).then(() => {
+                showToast("Withdraw Request Sent");
+                closeModal('withdraw-modal');
+                // Optimistically deduct? Better to wait for admin, or deduct now and refund if rejected.
+                // For this demo: Deduct now to prevent double withdraw
+                db.ref('users/' + currentUser.uid + '/wallet').set(userData.wallet - amount);
+            });
+        });
+        
+        // --- BROADCAST LISTENER ---
+        function listenToBroadcasts() {
+            db.ref('broadcasts').limitToLast(1).on('child_added', snap => {
+                const b = snap.val();
+                // Simple check to avoid spamming on load (check timestamp vs now)
+                if(Date.now() - b.timestamp < 10000) {
+                   showToast("📢 " + b.message); 
+                }
+            });
+        }
+
+    </script>
+</body>
+</html>
